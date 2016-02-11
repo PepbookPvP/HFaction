@@ -21,6 +21,12 @@ permission:
           HFaction.cmd.f.disband:
             description: disband a faction
             default: true
+          HFaction.cmd.f.join:
+            description: "create a faction"
+            default: true
+          HFaction.cmd.f.quit:
+            description: disband a faction
+            default: true
           HFaction.cmd.f.list:
             description: list factions
             default: true
@@ -32,11 +38,20 @@ permission:
           HFaction.cmd.fcmd.chat:
             description: chat in a faction
             default: true
+        HFaction.cmd.fcmd.list:
+            description: show the member list of your faction
+            default: true
 
       HFaction.cmd.fadmin:
-        description: HFaction admin command
+        description: the command used in a faction
         default: op
         children:
+          HFaction.cmd.fadmin.list:
+            description: show the member list of a faction
+            default: op
+          HFaction.cmd.fadmin.info:
+            description: get a player's faction info
+            default: op
           HFaction.cmd.fadmin.save:
             description: save config and data
             default: op

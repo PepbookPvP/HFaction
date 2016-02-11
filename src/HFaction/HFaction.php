@@ -44,7 +44,7 @@ class HFaction extends PluginBase{
             ],
             'member-limit'=>100,
             'default-position'=>[
-                'owner'=>10,
+                'master' => 10,
                 'manager'=>6,
                 'normal'=>1
             ],
@@ -64,11 +64,11 @@ class HFaction extends PluginBase{
     }
 
     private function loadFactions(){
-        //$factions[$name] = ['name'=>$name, 'creator'=>$creator, 'position'=>['owner'=>10, 'manager'=>6, 'normal'=>1], 'level'=>1, 'money'=>100];
+        //$factions[$name] = ['name'=>$name, 'master'=>$master, 'position'=>['master'=>10, 'manager'=>6, 'normal'=>1], 'level'=>1, 'money'=>100];
         //$data[$faction][$name] = ['name'=>$name, 'faction'=>$faction, 'position'=>'normal', 'level'=>1, 'contribution'=>0];
         $config = new Config($this->path.'Faction.yml', Config::YAML, []);
         foreach($config->getAll() as $key=>$value){
-            if(isset($value['owner']) and isset($value['level']) and isset($value['money']) and is_numeric($value['level']) and is_numeric($value['money']) and isset($value['position']) and is_array($value['position'])){
+            if (isset($value['master']) and isset($value['level']) and isset($value['money']) and is_numeric($value['level']) and is_numeric($value['money']) and isset($value['position']) and is_array($value['position'])) {
                 $this->faction[$key] = $value;
             }
         }
@@ -130,38 +130,39 @@ class HFaction extends PluginBase{
         return null;
     }
 
-    public function creatorFaction($name, $creator, $money = 0) : bool{
-        if(!is_string($name)){
+    public function createFaction($faction, $master, $money = 0) : bool
+    {
+        if (!is_string($faction)) {
             return false;
         }
-        if(array_key_exists($name, $this->faction)){
+        if (array_key_exists($faction, $this->faction)) {
             return false;
         }
         if(!is_numeric($money)){
             $money = 0;
         }
-        $data = $this->getMember($creator);
+        $data = $this->getMember($master);
         if($data != null){
             return false;
         }
-        $faction = ['owner'=>$creator, 'position'=>$this->conf->get('default-position', ['owner'=>10, 'manager'=>6, 'normal'=>1]), 'level'=>1, 'money'=>$money];
-        $this->faction[$name] = $faction;
-        $this->member[$name][$creator] = ['position'=>'owner', 'level'=>0, 'contribution'=>$money];
+        $f = ['master' => $master, 'position' => $this->conf->get('default-position', ['master' => 10, 'manager' => 6, 'normal' => 1]), 'level' => 1, 'money' => $money];
+        $this->faction[$faction] = $f;
+        $this->member[$faction][$master] = ['position' => 'master', 'level' => 0, 'contribution' => $money];
         return true;
     }
 
-    public function removeFaction($name, $owner)
+    public function removeFaction($faction, $master)
     {
-        $faction = $this->getFaction($name);
-        if (is_array($faction)) {
-            if (strtolower($faction['owner']) == strtolower($owner)) {
-                foreach ($this->getFactionMembers($name) as $key => $member) {
-                    //if($key != $owner) {
-                    $this->quit($key, $name);
+        $f = $this->getFaction($faction);
+        if (is_array($f)) {
+            if (strtolower($f['master']) == strtolower($master)) {
+                foreach ($this->getFactionMembers($faction) as $key => $member) {
+                    //if($key != $master) {
+                    $this->quit($key, $faction);
                     //}
                 }
-                unset($this->faction[$name]);
-                unset($this->member[$faction]);
+                unset($this->faction[$faction]);
+                unset($this->member[$f]);
                 return true;
             }
         }
@@ -190,7 +191,7 @@ class HFaction extends PluginBase{
     public function quit($name, $faction)
     {
         $f = $this->getFaction($faction);
-        if ($f == null or strtolower($f['owner']) == $faction) {
+        if ($f == null or strtolower($f['master']) == $faction) {
             return false;
         }
         if (array_key_exists($faction, $this->member)) {
@@ -213,33 +214,106 @@ class HFaction extends PluginBase{
                             $sender->sendMessage("Don't send this command in console");
                             return true;
                         }
+                        if (!$sender->hasPermission('HFaction.cmd.f.create')) {
+                            $sender->sendMessage('You have no permission');
+                            return true;
+                        }
                         if(count($args) < 1){
-                            return false;
+                            $this->onCommand($sender, $command, $label, ['help', 'create']);
+                            return true;
                         }
                         if(array_key_exists($args[0], $this->faction)){
-                            $owner = $this->faction[$args[0]]['owner'];
-                            $sender->sendMessage('公会: '.$args[0].' 已结存在. 会长: '.$owner);
+                            $master = $this->faction[$args[0]]['master'];
+                            $sender->sendMessage("The faction " . $args[0] . " existed. Master: " . $master);
                             return true;
                         }
                         $data = $this->getMember($sender->getName());
                         if($data != null){
-                            $sender->sendMessage("你已经加入了公会'".$data['faction']."', 请先退出当前公会.");
+                            $sender->sendMessage("You are in the faction'" . $data['faction'] . "', You should quit it first.");
                             return true;
                         }
-                        $result = $this->creatorFaction($args[0], $sender->getName());
+                        $result = $this->createFaction($args[0], $sender->getName());
                         if($result){
-                            $sender->sendMessage('创建成功,公会名称: '.$args[0]);
+                            $sender->sendMessage('Create successfully, Faction name: ' . $args[0]);
                         }else{
-                            $sender->sendMessage('创建失败,发生意料之外的错误');
+                            $sender->sendMessage('An unexpected error has occurred when Create the faction');
                         }
                         return true;
                     case 'disband':
+                        if ($sender instanceof ConsoleCommandSender) {
+                            $sender->sendMessage("Don't send this command in console");
+                            return true;
+                        }
+                        if (!$sender->hasPermission('HFaction.cmd.f.disband')) {
+                            $sender->sendMessage('You have no permission');
+                            return true;
+                        }
+                        if (count($args) != 1) {
+                            $this->onCommand($sender, $command, $label, ['help', 'disband']);
+                            return true;
+                        }
+                        $name = array_shift($args);
+                        $master = $sender->getName();
+                        $faction = $this->getFaction($name);
+                        if (is_array($faction)) {
+                            if (strtolower($faction['master']) == strtolower($master)) {
+                                foreach ($this->getFactionMembers($name) as $key => $member) {
+                                    $this->quit($key, $name);
+                                }
+                                unset($this->faction[$name]);
+                                unset($this->member[$faction]);
+                                return true;
+                            }
+                        }
+                        return true;
+                    case 'join':
+                        if ($sender instanceof ConsoleCommandSender) {
+                            $sender->sendMessage("Don't send this command in console");
+                            return true;
+                        }
+                        if (!$sender->hasPermission('HFaction.cmd.f.join')) {
+                            $sender->sendMessage('You have no permission');
+                            return true;
+                        }
+                        if (count($args) != 1) {
+                            $sender->sendMessage('Please send your faction name to check if it is correct');
+                            return true;
+                        }
+                        $name = $sender->getName();
+                        $faction = array_shift($args);
+                        $data = $this->getMember($name);
+                        if ($data != null) {
+                            $sender->sendMessage("You have joined the faction'" . $data['faction'] . "'");
+                            return true;
+                        }
+                        if (count($this->member[$faction]) >= $this->conf->get('member-limit', 100)) {
+                            $sender->sendMessage('The faction is full');
+                            return true;
+                        }
+                        $this->member[$faction][strtolower($name)] = ['position' => 'normal', 'level' => 1, 'contribution' => 0];
+                        return true;
+                    case 'quit':
+                        if ($sender instanceof ConsoleCommandSender) {
+                            $sender->sendMessage("Don't send this command in console");
+                            return true;
+                        }
+                        if (!$sender->hasPermission('HFaction.cmd.f.quit')) {
+                            $sender->sendMessage('You have no permission');
+                            return true;
+                        }
                         return true;
                     case 'list':
+                        if (!$sender->hasPermission('HFaction.cmd.f.list')) {
+                            $sender->sendMessage('You have no permission');
+                            return true;
+                        }
                         $array = array_keys($this->getFactions());
                         $sender->sendMessage('-----Faction List------');
-                        foreach($array as $name){
+                        $count = 0;
+                        $limit = (count($args) == 1 and is_numeric($args[0]) and $args[0] >= 1) ? (int)$args[0] : 1;
+                        foreach ($array as $name => $data) {
                             $sender->sendMessage('- '.$name);
+                            $count++;
                         }
                         return true;
                     case 'help':
@@ -319,7 +393,7 @@ class HFaction extends PluginBase{
     /*
     private function test2(){
         for($i = 1; $i <= 100; $i++){
-            $this->faction['测试'.$i] = ['name'=>'测试'.$i, 'creator'=>'happy163', 'owner'=>'happy163', 'level'=>0, 'money'=>0];
+            $this->faction['测试'.$i] = ['name'=>'测试'.$i, 'master'=>'happy163', 'master'=>'happy163', 'level'=>0, 'money'=>0];
         }
         foreach($this->member as $faction=>$array){
             $this->member[$faction] = [];
