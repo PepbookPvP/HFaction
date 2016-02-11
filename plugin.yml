@@ -7,36 +7,39 @@ description: a Faction Plugin
 load: POSTWORLD
 
 permission:
-  HFaction.cmd.*:
+  HFaction.cmd:
     description: all cmd permission of HFaction
     default: op
     children:
-    	HFaction.cmd.f:
-		    description: HFaction main command
-		    default: true
-		    children:
-		    	HFaction.cmd.f.create:
-				    description: create a faction
-				    default: true
-				  HFaction.cmd.f.disband:
-				    description: disband a faction
-				    default: true
-				  HFaction.cmd.f.list:
-				    description: list factions
-				    default: true
-    	HFaction.cmd.fcmd:
-		    description: the command used in a faction
-		    default: true
-		    children:
-		    	HFaction.cmd.fcmd.chat:
-				    description: chat in a faction
-				    default: true
-    	HFaction.cmd.fadmin:
-		    description: HFaction admin command
-		    default: op
-		    children:
-		    	
+      HFaction.cmd.f:
+        description: "HFaction main command"
+        default: true
+        children:
+          HFaction.cmd.f.create:
+            description: "create a faction"
+            default: true
+          HFaction.cmd.f.disband:
+            description: disband a faction
+            default: true
+          HFaction.cmd.f.list:
+            description: list factions
+            default: true
 
+      HFaction.cmd.fcmd:
+        description: the command used in a faction
+        default: true
+        children:
+          HFaction.cmd.fcmd.chat:
+            description: chat in a faction
+            default: true
+
+      HFaction.cmd.fadmin:
+        description: HFaction admin command
+        default: op
+        children:
+          HFaction.cmd.fadmin.save:
+            description: save config and data
+            default: op
 commands:
   f:
     description: HFaction main command

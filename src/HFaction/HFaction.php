@@ -1,21 +1,19 @@
 <?php
 /**
  * Author: happy163
+ * Notice: the user name must be lowered before used in array
  */
 
 namespace HFaction;
-
-const POST_TIME = true;
 
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\ConsoleCommandSender;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
+use pocketmine\utils\TextFormat;
 
 class HFaction extends PluginBase{
-
-
 
     /** @var HFaction */
     private static $instance;
@@ -53,9 +51,9 @@ class HFaction extends PluginBase{
             'allowed-map'=>[]
         ]);
 
-        $this->getLogger()->debug("Factions is loading...");
+        $this->getLogger()->debug(TextFormat::GOLD . "Factions is loading...");
         $this->loadFactions();
-        $this->getLogger()->debug("Factions Loaded");
+        $this->getLogger()->debug(TextFormat::GREEN . "Factions Loaded");
 
         //$this->test2();
         //$this->test();
@@ -152,15 +150,69 @@ class HFaction extends PluginBase{
         return true;
     }
 
+    public function removeFaction($name, $owner)
+    {
+        $faction = $this->getFaction($name);
+        if (is_array($faction)) {
+            if (strtolower($faction['owner']) == strtolower($owner)) {
+                foreach ($this->getFactionMembers($name) as $key => $member) {
+                    //if($key != $owner) {
+                    $this->quit($key, $name);
+                    //}
+                }
+                unset($this->faction[$name]);
+                unset($this->member[$faction]);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function join($name, $faction)
+    {
+        $data = $this->getMember($name);
+        if ($data != null) {
+            return false;
+        }
+        $f = $this->getFaction($faction);
+        if ($f == null) {
+            return false;
+        }
+        $array = $this->getFactionMembers($faction);
+        if (count($array) >= $this->conf->get('member-limit', 100)) {
+            return false;
+        }
+        $data = ['position' => 'normal', 'level' => 1, 'contribution' => 0];
+        $this->member[$faction][strtolower($name)] = $data;
+        return true;
+    }
+
+    public function quit($name, $faction)
+    {
+        $f = $this->getFaction($faction);
+        if ($f == null or strtolower($f['owner']) == $faction) {
+            return false;
+        }
+        if (array_key_exists($faction, $this->member)) {
+            $array = array_change_key_case($this->member[$faction]);
+            if (array_key_exists(strtolower($name), $array)) {
+                unset($array[strtolower($name)]);
+                $this->member[$faction] = $array;
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function onCommand(CommandSender $sender, Command $command, $label, array $args) : bool {
         switch($command->getName()){
             case 'f':
                 switch(array_shift($args)){
                     case 'create':
-                        /*if($sender instanceof ConsoleCommandSender){
+                        if ($sender instanceof ConsoleCommandSender) {
                             $sender->sendMessage("Don't send this command in console");
                             return true;
-                        }*/
+                        }
                         if(count($args) < 1){
                             return false;
                         }
@@ -180,6 +232,8 @@ class HFaction extends PluginBase{
                         }else{
                             $sender->sendMessage('创建失败,发生意料之外的错误');
                         }
+                        return true;
+                    case 'disband':
                         return true;
                     case 'list':
                         $array = array_keys($this->getFactions());
@@ -231,7 +285,20 @@ class HFaction extends PluginBase{
                     'fcmd'=>'- /fcmd [chat|]',
                 ];
                 if(count($args) > 0){
-
+                    $cmd = array_shift($args);
+                    if (array_key_exists($cmd, $m)) {
+                        if ($sender->hasPermission('HFaction.cmd.' . $cmd)) {
+                            $sender->sendMessage($m[$cmd]);
+                        } else {
+                            $sender->sendMessage('You have no permission');
+                        }
+                    } else {
+                        $sender->sendMessage("The command '/" . $cmd . "' does not exist");
+                    }
+                } else {
+                    foreach ($m as $t) {
+                        $sender->sendMessage($t);
+                    }
                 }
                 return true;
         }
