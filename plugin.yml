@@ -1,0 +1,56 @@
+name: HFaction
+author: happy163
+api: [1.3.0]
+version: 1.0.0
+main: HFaction\HFaction
+description: a Faction Plugin
+load: POSTWORLD
+
+permission:
+  HFaction.cmd.*:
+    description: all cmd permission of HFaction
+    default: op
+    children:
+    	HFaction.cmd.f:
+		    description: HFaction main command
+		    default: true
+		    children:
+		    	HFaction.cmd.f.create:
+				    description: create a faction
+				    default: true
+				  HFaction.cmd.f.disband:
+				    description: disband a faction
+				    default: true
+				  HFaction.cmd.f.list:
+				    description: list factions
+				    default: true
+    	HFaction.cmd.fcmd:
+		    description: the command used in a faction
+		    default: true
+		    children:
+		    	HFaction.cmd.fcmd.chat:
+				    description: chat in a faction
+				    default: true
+    	HFaction.cmd.fadmin:
+		    description: HFaction admin command
+		    default: op
+		    children:
+		    	
+
+commands:
+  f:
+    description: HFaction main command
+    permission: HFaction.cmd.f
+    usage: /f help
+  fcmd:
+    description: the command used in a faction
+    permission: HFaction.cmd.fcmd
+    usage: /fcmd help
+  fadmin:
+    description: HFaction admin command
+    permission: HFaction.cmd.fadmin
+    usage: /fadmin help
+  fhelp:
+    description: HFaction admin command
+    permission: HFaction.cmd.fhelp
+    usage: /fhelp [cmd]
