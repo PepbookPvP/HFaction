@@ -205,6 +205,49 @@ class HFaction extends PluginBase{
         return false;
     }
 
+    private function listFactions($start = 1, $end = 5, $mode = 'default_up')
+    {
+        $factions = $this->faction;
+
+        $key = explode('_', $mode);
+        if (count($mode) == 1) {
+            $mode[1] = 'up';
+        } elseif (count($mode) != 2) {
+            return null;
+        }
+
+        $list = [];
+        if (in_array($mode[0], ['master', 'level', 'money'])) {
+            foreach ($factions as $name => $f) {
+                $list[$name] = $f[$mode[0]];
+            }
+        } elseif ($mode[0] == 'default') {
+            foreach ($factions as $name => $f) {
+                $list[$name] = $name;
+            }
+        } elseif ($mode[0] == 'create') {
+            $id = 0;
+            foreach ($factions as $name => $f) {
+                $list[$name] = $id++;
+            }
+            unset($id);
+        }
+
+        natcasesort($list);
+
+        $id = 1;
+        $result = [];
+        foreach ($list as $name => $value) {
+            if ($id >= $start and $id <= $end) {
+                $result[$name] = $this->faction[$name];
+            }
+        }
+        if ($mode[1] == 'down') {
+            $result = array_reverse($result, true);
+        }
+        return $result;
+    }
+
     public function onCommand(CommandSender $sender, Command $command, $label, array $args) : bool {
         switch($command->getName()){
             case 'f':
@@ -307,14 +350,9 @@ class HFaction extends PluginBase{
                             $sender->sendMessage('You have no permission');
                             return true;
                         }
-                        $array = array_keys($this->getFactions());
                         $sender->sendMessage('-----Faction List------');
-                        $count = 0;
-                        $limit = (count($args) == 1 and is_numeric($args[0]) and $args[0] >= 1) ? (int)$args[0] : 1;
-                        foreach ($array as $name => $data) {
-                            $sender->sendMessage('- '.$name);
-                            $count++;
-                        }
+                        $page = (count($args) == 1 and is_numeric($args[0]) and $args[0] >= 1) ? (int)$args[0] : 1;
+                        $this->listFactions($page * 5 - 4, $page * 5);
                         return true;
                     case 'help':
                     default:
